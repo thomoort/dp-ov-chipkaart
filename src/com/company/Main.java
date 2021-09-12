@@ -29,7 +29,5 @@ public class Main {
             String output = String.format("#%s: %s %s %s %s\n", id, voorletters, tussenvoegsel, achternaam, geboortedatum).replaceAll("\\s+", " ");
             System.out.println("\t" + output);
         }
-
     }
-
 }
