@@ -1,43 +1,33 @@
 package com.company.dao;
 
+import com.company.classes.Adres;
 import com.company.classes.Reiziger;
-import org.checkerframework.checker.units.qual.A;
 import org.postgresql.util.PSQLException;
 
 import java.sql.*;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Properties;
 
 public class ReizigerDAOPsql implements ReizigerDAO {
 
-    Connection conn;
+    private Connection conn;
+    private AdresDAO adao;
 
-    /**
-     * Bij het aanroepen van de constructer zonder parameter, wordt de connectie hier aangemaakt
-     * @throws SQLException
-     */
-    public ReizigerDAOPsql() throws SQLException {
-        String url = "jdbc:postgresql://localhost/ov-chipkaart";
-        Properties props = new Properties();
-        props.setProperty("user","postgres");
-        props.setProperty("password","admin");
-
-        conn = DriverManager.getConnection(url, props);
-    }
-
-    /**
-     * Als er een Connection wordt meegegeven, dan wordt die gebruikt.
-     * @param conn
-     */
     public ReizigerDAOPsql(Connection conn) {
         this.conn = conn;
+        adao = new AdresDAOPsql(this.conn, this);
+    }
+
+    //Snelle oplossing om van beide DAO's elkaar te kunnen aanroepen zonder oneidig nieuwe instanties van elkaar te maken
+    public ReizigerDAOPsql(Connection conn, AdresDAO adao) {
+        this.conn = conn;
+        this.adao = adao;
     }
 
     @Override
     public boolean save(Reiziger reiziger) throws SQLException {
-        PreparedStatement ps = null;
+        PreparedStatement ps;
         if (reiziger.getId() > 0) {
             ps  = conn.prepareStatement("INSERT INTO reiziger (reiziger_id, voorletters, achternaam, tussenvoegsel, geboortedatum) VALUES (?, ?, ?, ?, ?)");
             ps.setInt(1, reiziger.getId());
@@ -91,9 +81,8 @@ public class ReizigerDAOPsql implements ReizigerDAO {
         ps.setInt(1, id);
 
         ResultSet rs = ps.executeQuery();
-        while (rs.next()) {
-            Reiziger reizigerObj = createReiziger(rs);
-            return reizigerObj;
+        if (rs.next()) {
+            return createReiziger(rs);
         }
         return null;
     }
@@ -129,6 +118,11 @@ public class ReizigerDAOPsql implements ReizigerDAO {
         return reizigers;
     }
 
+    public void setReizigerAdres(Adres adres) throws SQLException {
+        Reiziger reiziger = findById(adres.getReizigerId());
+        reiziger.setAdres(adres);
+    }
+
     private Reiziger createReiziger(ResultSet rs) throws SQLException {
         Reiziger reiziger = new Reiziger();
         reiziger.setId(rs.getInt("reiziger_id"));
@@ -143,6 +137,11 @@ public class ReizigerDAOPsql implements ReizigerDAO {
         Date geboortedatum = rs.getDate("geboortedatum");
         if (geboortedatum != null) {
             reiziger.setGeboortedatum(geboortedatum);
+        }
+
+        Adres adres = adao.findByReiziger(reiziger);
+        if (adres != null) {
+            reiziger.setAdres(adres);
         }
 
         return reiziger;

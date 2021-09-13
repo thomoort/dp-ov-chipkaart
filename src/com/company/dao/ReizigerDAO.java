@@ -1,5 +1,6 @@
 package com.company.dao;
 
+import com.company.classes.Adres;
 import com.company.classes.Reiziger;
 
 import java.sql.SQLException;
@@ -23,5 +24,7 @@ public interface ReizigerDAO {
     List<Reiziger> findByGbdatum(String datum) throws SQLException;
 
     List<Reiziger> findAll() throws SQLException;
+
+    void setReizigerAdres(Adres adres) throws SQLException;
 
 }

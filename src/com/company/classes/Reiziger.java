@@ -10,6 +10,7 @@ public class Reiziger {
     private String achternaam = null;
     private String tussenvoegsel = null;
     private Date geboortedatum = null;
+    private Adres adres = null;
 
     public Reiziger() {
 
@@ -83,12 +84,29 @@ public class Reiziger {
         this.geboortedatum = geboortedatum;
     }
 
+    public Adres getAdres() {
+        return adres;
+    }
+
+    public void setAdres(Adres adres) {
+        this.adres = adres;
+    }
+
     @Override
     public String toString() {
         String GBdatum = getGeboortedatum() == null ? "" : new SimpleDateFormat("dd/MM/yyyy").format(getGeboortedatum());
         String tussen = getTussenvoegsel() == null ? "" : getTussenvoegsel();
+        String adresStr = getAdres() == null ? "" : String.valueOf(getAdres());
 
-        return String.format("#%s: %s %s %s %s\n",
+        return String.format("#%s: [%s %s %s - %s ],  %s \n",
+                getId(), getVoorletters(), tussen, getAchternaam(), GBdatum, adresStr).replaceAll("\\s+", " ");
+    }
+
+    public String toStringNoAdres() {
+        String GBdatum = getGeboortedatum() == null ? "" : new SimpleDateFormat("dd/MM/yyyy").format(getGeboortedatum());
+        String tussen = getTussenvoegsel() == null ? "" : getTussenvoegsel();
+
+        return String.format("#%s: [%s %s %s - %s ]\n",
                 getId(), getVoorletters(), tussen, getAchternaam(), GBdatum).replaceAll("\\s+", " ");
     }
 }

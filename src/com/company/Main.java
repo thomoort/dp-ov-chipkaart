@@ -1,8 +1,12 @@
 package com.company;
 
+import com.company.classes.Adres;
 import com.company.classes.Reiziger;
+import com.company.dao.AdresDAO;
+import com.company.dao.AdresDAOPsql;
 import com.company.dao.ReizigerDAO;
 import com.company.dao.ReizigerDAOPsql;
+import org.checkerframework.checker.units.qual.A;
 
 import java.sql.*;
 import java.util.List;
@@ -10,32 +14,32 @@ import java.util.Properties;
 
 public class Main {
 
-    public static void main(String[] args) throws SQLException {
+    private static Connection conn;
 
-//        String url = "jdbc:postgresql://localhost/ov-chipkaart";
-//        Properties props = new Properties();
-//        props.setProperty("user","postgres");
-//        props.setProperty("password","admin");
-//        Connection conn = DriverManager.getConnection(url, props);
-//
-//        PreparedStatement statement = conn.prepareStatement("SELECT * FROM reiziger");
-//        ResultSet resultSet = statement.executeQuery();
-//
-//        System.out.println("Alle reizigers:");
-//        while (resultSet.next()) {
-//            String id = resultSet.getString("reiziger_id");
-//            String voorletters = resultSet.getString("voorletters").replaceAll("", ".").substring(1);
-//            String tussenvoegsel = resultSet.getString("tussenvoegsel") == null ?
-//                    "" : resultSet.getString("tussenvoegsel");
-//            String achternaam = resultSet.getString("achternaam");
-//            String geboortedatum = resultSet.getString("geboortedatum" )== null ?
-//                    "" : String.format("(%s)",resultSet.getString("geboortedatum"));
-//
-//            String output = String.format("#%s: %s %s %s %s\n", id, voorletters, tussenvoegsel, achternaam, geboortedatum).replaceAll("\\s+", " ");
-//            System.out.println("\t" + output);
-//        }
-        ReizigerDAO reizigerDAO = new ReizigerDAOPsql();
+    public static void main(String[] args) throws SQLException {
+        setConnection();
+        ReizigerDAO reizigerDAO = new ReizigerDAOPsql(getConnection());
+        AdresDAO adresDAO = new AdresDAOPsql(getConnection());
+
         testReizigerDAO(reizigerDAO);
+        testAdresDAO(adresDAO, reizigerDAO);
+    }
+
+    private static void setConnection() throws SQLException {
+        String url = "jdbc:postgresql://localhost/ov-chipkaart";
+        Properties props = new Properties();
+        props.setProperty("user","postgres");
+        props.setProperty("password","admin");
+
+        conn = DriverManager.getConnection(url, props);
+    }
+
+    private static Connection getConnection() {
+        if (conn == null) {
+            System.out.println("De connectie bestaat niet, er is iets fout gegaan dus het programma sluit nu af.");
+            System.exit(0);
+        }
+        return conn;
     }
 
     /**
@@ -84,12 +88,44 @@ public class Main {
 
         //Verwijder reiziger M. Rutte (78) van DB
         System.out.println("\n-----\n[Test] Verwijder M.Rutte (ID: 78) van het systeem");
-        System.out.println("\nAlle reizigers voor delete operatie:");
-        System.out.println(rdao.findAll());
+        System.out.println("\nFindById 78 voor delete operatie:");
+        System.out.println(rdao.findById(78));
         rdao.delete(mark);
         System.out.println("\nNa de delete operatie:");
-        System.out.println(rdao.findAll());
+        System.out.println(rdao.findById(78));
 
+    }
+
+    private static void testAdresDAO(AdresDAO adao, ReizigerDAO rdao) throws SQLException {
+        Reiziger reiziger = new Reiziger(99, "A", "B", "C", java.sql.Date.valueOf("1900-01-01"));
+        rdao.save(reiziger);
+        System.out.println("\n\n ----------------- [AdresDAO TEST] ---------------------");
+        System.out.println("Testen van AdresDAO met reiziger:");
+        System.out.println(reiziger);
+
+        System.out.println("\n-----\n[Test] aanmaken en opslaan van adres:");
+        Adres adres = new Adres(99, "0000AA", "0", "1st Street", "Pangea", reiziger.getId());
+        adao.save(adres);
+        System.out.println("Adres: " + adao.findById(99));
+        System.out.println("Reiziger: " + rdao.findById(99));
+
+        System.out.println("\n-----\n[Test] Updaten adres postcode van 0000AA naar 1111BB");
+        adres.setPostcode("1111BB");
+        adao.update(adres);
+        System.out.println("Adres: " + adao.findById(99));
+        System.out.println("Reiziger: " + rdao.findById(99));
+
+        System.out.println("\n-----\n[Test] Vind alle adressen");
+        System.out.println(adao.findAll());
+
+        System.out.println("\n-----\n[Test] Vind adres via reiziger");
+        System.out.println(adao.findByReiziger(reiziger) + ", adress van: " + reiziger.toStringNoAdres());
+
+        System.out.println("\n-----\n[Test] Adres verwijderd, findById test & reiziger get adres");
+        adao.delete(adres);
+        System.out.println(adao.findById(adres.getId()));
+        System.out.println(reiziger.getAdres());
+        rdao.delete(reiziger);
     }
 
 }
